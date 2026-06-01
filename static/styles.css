@@ -339,6 +339,44 @@ tr:last-child td {
   font-size: 13px;
 }
 
+.agent-header > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.agent-shortcuts button {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  background: white;
+  color: var(--text);
+  padding: 0 12px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.agent-shortcuts button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.agent-shortcuts .shortcut-toggle {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.agent-shortcuts .shortcut-toggle:hover {
+  background: var(--primary-strong);
+  color: white;
+}
+
 #agentStatus {
   border-radius: 999px;
   background: #e6f3f0;
@@ -494,5 +532,9 @@ tr:last-child td {
 
   .agent-form button {
     width: 100%;
+  }
+
+  .agent-shortcuts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

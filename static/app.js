@@ -11,6 +11,9 @@ const els = {
   agentForm: document.querySelector("#agentForm"),
   agentInput: document.querySelector("#agentInput"),
   agentStatus: document.querySelector("#agentStatus"),
+  shortcutButtons: document.querySelectorAll("[data-template]"),
+  shortcutToggle: document.querySelector("#shortcutToggle"),
+  shortcutExtraButtons: document.querySelectorAll(".shortcut-extra"),
   toast: document.querySelector("#toast"),
 };
 
@@ -162,6 +165,54 @@ async function sendAgentMessage(event) {
 
 els.refreshBtn.addEventListener("click", loadAll);
 els.agentForm.addEventListener("submit", sendAgentMessage);
+els.shortcutButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const templates = {
+      query: "查询《》",
+      add: "添加图书《》，库存 本，价格为，分类为，作者为",
+      purchase: "给《》进货  本",
+      sale: "卖出《》 本",
+      lowStock: "查询库存少于 10 本的书",
+      topSales: "统计销量最高的 5 本书",
+      stockIncrease: "把《》的库存增加  本",
+      stockDecrease: "把《》的库存减少  本",
+      stockSet: "把《》的库存设置为  本",
+      changePrice: "把《》的价格改为 ",
+      changeAuthor: "把《》的作者改为 ",
+      changeCategory: "把《》的分类改为 ",
+      renameBook: "把《》的书名改为《》",
+      deleteBook: "删除《》",
+    };
+    const value = templates[button.dataset.template] || "";
+    els.agentInput.value = value;
+    els.agentInput.focus();
+    placeCursorInTemplate(value);
+  });
+});
+els.shortcutToggle.addEventListener("click", () => {
+  const expanded = els.shortcutToggle.getAttribute("aria-expanded") === "true";
+  els.shortcutExtraButtons.forEach((button) => {
+    button.hidden = expanded;
+  });
+  els.shortcutToggle.setAttribute("aria-expanded", String(!expanded));
+  els.shortcutToggle.textContent = expanded ? "展开显示" : "折叠显示";
+});
+
+function placeCursorInTemplate(value) {
+  const titleEnd = value.indexOf("》");
+  if (titleEnd > 0) {
+    els.agentInput.setSelectionRange(titleEnd, titleEnd);
+    return;
+  }
+
+  const doubleSpace = value.indexOf("  ");
+  if (doubleSpace >= 0) {
+    els.agentInput.setSelectionRange(doubleSpace + 1, doubleSpace + 1);
+    return;
+  }
+
+  els.agentInput.setSelectionRange(value.length, value.length);
+}
 
 appendMessage("agent", "你好，我可以帮你查询、添加、改库存、改价格、进货、销售、删除和做库存预警。");
 loadAll().catch((error) => showToast(error.message));

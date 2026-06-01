@@ -4,13 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>基于 Agent 的图书进销存系统</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=20260601-5" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=20260601-8" />
   </head>
   <body>
     <header class="app-header">
       <div>
         <h1>基于 Agent 的图书进销存系统</h1>
-        <p>传统管理台与自然语言操作入口</p>
       </div>
       <div class="header-actions">
         <button id="refreshBtn" class="icon-btn" title="刷新数据" type="button">↻</button>
@@ -21,7 +20,7 @@
       <section class="workspace">
         <section class="panel">
           <div class="panel-title">
-            <h2>图书管理</h2>
+            <h2>图书库存</h2>
           </div>
 
           <div class="table-wrap">
@@ -43,7 +42,6 @@
 
         <section>
           <div class="panel">
-            <h2>数据统计</h2>
             <div class="stat-lists">
               <div>
                 <h3>销量排行</h3>
@@ -62,7 +60,23 @@
         <div class="agent-header">
           <div>
             <h2>Agent 对话</h2>
-            <p>输入目标，系统自动选择工具函数</p>
+            <div class="agent-shortcuts">
+              <button type="button" data-template="query">查询</button>
+              <button type="button" data-template="add">添加</button>
+              <button type="button" data-template="purchase">进货</button>
+              <button type="button" data-template="sale">销售</button>
+              <button id="shortcutToggle" class="shortcut-toggle" type="button" aria-expanded="false">展开显示</button>
+              <button class="shortcut-extra" type="button" data-template="lowStock" hidden>库存预警</button>
+              <button class="shortcut-extra" type="button" data-template="topSales" hidden>销量排行</button>
+              <button class="shortcut-extra" type="button" data-template="stockIncrease" hidden>增加库存</button>
+              <button class="shortcut-extra" type="button" data-template="stockDecrease" hidden>减少库存</button>
+              <button class="shortcut-extra" type="button" data-template="stockSet" hidden>设置库存</button>
+              <button class="shortcut-extra" type="button" data-template="changePrice" hidden>改价格</button>
+              <button class="shortcut-extra" type="button" data-template="changeAuthor" hidden>改作者</button>
+              <button class="shortcut-extra" type="button" data-template="changeCategory" hidden>改分类</button>
+              <button class="shortcut-extra" type="button" data-template="renameBook" hidden>改书名</button>
+              <button class="shortcut-extra" type="button" data-template="deleteBook" hidden>删除</button>
+            </div>
           </div>
           <span id="agentStatus">就绪</span>
         </div>
@@ -77,6 +91,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="{{ url_for('static', filename='app.js') }}?v=20260601-5"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=20260601-8"></script>
   </body>
 </html>
