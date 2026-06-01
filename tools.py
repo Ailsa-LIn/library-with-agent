@@ -130,12 +130,44 @@ def update_book(
         return fail(f"修改失败：{exc}")
 
 
-def delete_book(book_id: int) -> dict:
+def update_book_info(
+    title: str,
+    new_title: str | None = None,
+    price: float | None = None,
+    stock: int | None = None,
+    author: str | None = None,
+    category: str | None = None,
+) -> dict:
+    if all(value is None for value in [new_title, price, stock, author, category]):
+        return fail("请说明要修改书名、价格、作者或分类中的哪一项")
+
     with get_conn() as conn:
-        book = _resolve_book(conn, book_id=book_id)
+        book = _resolve_book(conn, title=title)
+        if not book:
+            return fail("没有找到要修改的图书")
+
+        updated_title = (new_title or book["title"]).strip()
+        updated_author = book["author"] if author is None else author.strip()
+        updated_category = book["category"] if category is None else category.strip()
+        updated_price = book["price"] if price is None else float(price)
+        updated_stock = book["stock"] if stock is None else int(stock)
+
+    return update_book(
+        book_id=book["id"],
+        title=updated_title,
+        author=updated_author,
+        category=updated_category,
+        price=updated_price,
+        stock=updated_stock,
+    )
+
+
+def delete_book(book_id: int | None = None, title: str | None = None) -> dict:
+    with get_conn() as conn:
+        book = _resolve_book(conn, book_id=book_id, title=title)
         if not book:
             return fail("没有找到要删除的图书")
-        conn.execute("DELETE FROM books WHERE id = ?", (int(book_id),))
+        conn.execute("DELETE FROM books WHERE id = ?", (book["id"],))
     return ok(f"已删除《{book['title']}》")
 
 

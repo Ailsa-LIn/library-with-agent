@@ -16,6 +16,8 @@ import tools
 TOOL_DESCRIPTIONS = {
     "add_book": "添加图书，参数：title, price, stock, author, category",
     "search_book": "查询图书，参数：keyword",
+    "update_book_info": "修改图书信息，参数：title, new_title, price, author, category",
+    "delete_book": "删除图书，参数：title 或 book_id",
     "update_stock": "修改库存，参数：title 或 book_id, quantity, mode(increase/decrease/set)",
     "record_purchase": "记录进货，参数：title 或 book_id, quantity",
     "record_sale": "记录销售，参数：title 或 book_id, quantity",
@@ -97,6 +99,13 @@ def _parse_locally(command: str) -> dict:
     title = _extract_title(command)
     numbers = [int(num) for num in re.findall(r"\d+", command)]
 
+    if re.search(r"删除|删掉|移除|下架", command):
+        return {
+            "intent": "delete_book",
+            "params": {"title": title},
+            "source": "local_rules",
+        }
+
     if re.search(r"库存.*(少于|低于|不足)|库存预警|低库存", command):
         return {
             "intent": "low_stock_alert",
@@ -121,6 +130,26 @@ def _parse_locally(command: str) -> dict:
                 "author": _extract_text_after(command, "作者") or "",
                 "category": _extract_text_after(command, "分类") or "",
             },
+            "source": "local_rules",
+        }
+
+    if re.search(r"价格|售价|作者|分类|类别|书名|名称|改名", command) and re.search(r"修改|改为|改成|设置|设为|调整|更新|改名", command):
+        params: dict[str, Any] = {"title": title}
+        new_title = _extract_new_title(command)
+        price = _extract_float(command, r"(?:价格|售价)\s*(?:改为|改成|设置为|设为|调整为|到|[:：为是])?\s*(\d+(?:\.\d+)?)")
+        author = _extract_text_after(command, "作者")
+        category = _extract_text_after(command, "分类") or _extract_text_after(command, "类别")
+        if new_title:
+            params["new_title"] = new_title
+        if price is not None:
+            params["price"] = price
+        if author:
+            params["author"] = author
+        if category:
+            params["category"] = category
+        return {
+            "intent": "update_book_info",
+            "params": params,
             "source": "local_rules",
         }
 
@@ -185,6 +214,21 @@ def _run_tool(parsed: dict) -> dict:
     if intent == "search_book":
         return tools.list_books(keyword=params.get("keyword", ""))
 
+    if intent == "update_book_info":
+        return tools.update_book_info(
+            title=params.get("title", ""),
+            new_title=params.get("new_title"),
+            price=params.get("price"),
+            author=params.get("author"),
+            category=params.get("category"),
+        )
+
+    if intent == "delete_book":
+        return tools.delete_book(
+            book_id=params.get("book_id"),
+            title=params.get("title"),
+        )
+
     if intent == "update_stock":
         return tools.update_stock(
             book_id=params.get("book_id"),
@@ -213,7 +257,7 @@ def _run_tool(parsed: dict) -> dict:
     if intent == "top_sales":
         return tools.top_sales(int(params.get("limit") or 5))
 
-    return tools.fail("暂时没有识别出指令，可以试试：查询《数据结构》、添加一本《算法导论》价格 88 库存 20、卖出《数据结构》2 本")
+    return tools.fail("暂时没有识别出指令，可以试试：查询《数据结构》、添加一本《算法导论》价格 88 库存 20、把《数据结构》的价格改为 50、删除《算法导论》")
 
 
 def _extract_title(command: str) -> str:
@@ -223,13 +267,21 @@ def _extract_title(command: str) -> str:
 
     patterns = [
         r"(?:添加|新增|录入|加入)一本?([\w\s+\-:：]+?)(?:，|,|价格|售价|库存|作者|分类|$)",
-        r"(?:查询|查找|搜索|卖出|售出|销售|增加|减少|设置|修改|调整)(?:一本?)?([\w\s+\-:：]+?)(?:，|,|价格|售价|库存|数量|\d|本|$)",
+        r"(?:查询|查找|搜索|卖出|售出|销售|增加|减少|设置|修改|调整|删除|删掉|移除|下架)(?:一本?)?([\w\s+\-:：]+?)(?:，|,|价格|售价|库存|数量|\d|本|$)",
     ]
     for pattern in patterns:
         match = re.search(pattern, command)
         if match:
             return match.group(1).strip(" ：:，,")
     return ""
+
+
+def _extract_new_title(command: str) -> str:
+    titles = re.findall(r"《([^》]+)》", command)
+    if len(titles) >= 2:
+        return titles[1].strip()
+    match = re.search(r"(?:书名|名称|改名)\s*(?:改为|改成|设置为|设为|叫|为)?\s*([^，,。；;\s]+)", command)
+    return match.group(1).strip() if match else ""
 
 
 def _extract_float(command: str, pattern: str) -> float | None:
@@ -243,7 +295,7 @@ def _extract_int(command: str, pattern: str) -> int | None:
 
 
 def _extract_text_after(command: str, label: str) -> str | None:
-    match = re.search(rf"{label}\s*[:：为是]?\s*([^，,。；;\s]+)", command)
+    match = re.search(rf"{label}\s*(?:改为|改成|设置为|设为|调整为|[:：为是])?\s*([^，,。；;\s]+)", command)
     return match.group(1).strip() if match else None
 
 

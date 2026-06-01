@@ -31,7 +31,7 @@ $env:DEEPSEEK_API_KEY="你的 API Key"
 python app.py
 ```
 
-不配置 API Key 也能完成课堂演示，系统会使用 `agent.py` 里的本地规则识别 5 类指令。
+不配置 API Key 也能完成课堂演示，系统会使用 `agent.py` 里的本地规则识别常用管理指令。
 
 ## 已完成功能
 
@@ -54,6 +54,11 @@ python app.py
 把《C++ Primer》的库存增加 20 本
 卖出《数据结构》2 本
 查询《数据结构》
+把《数据结构》的价格改为 50
+把《活着》的作者改为 余华
+把《高等数学》的分类改为 教材
+把《算法导论》的书名改为《算法导论第三版》
+删除《算法导论》
 ```
 
 ## 核心设计
@@ -78,6 +83,8 @@ SQLite 数据库
 add_book()        添加图书
 list_books()      查询图书
 update_stock()    修改库存
+update_book_info() 修改图书信息
+delete_book()     删除图书
 record_purchase() 记录进货
 record_sale()     记录销售
 low_stock_alert() 库存预警
