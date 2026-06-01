@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>基于 Agent 的图书进销存系统</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=20260601-2" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=20260601-4" />
   </head>
   <body>
     <header class="app-header">
@@ -41,38 +41,7 @@
         <section class="panel">
           <div class="panel-title">
             <h2>图书管理</h2>
-            <div class="search-row">
-              <input id="searchInput" type="search" placeholder="书名、作者、分类" />
-              <button id="searchBtn" type="button">查询</button>
-              <button id="lowStockBtn" type="button">库存预警</button>
-            </div>
           </div>
-
-          <form id="bookForm" class="book-form">
-            <label>
-              <span>书名</span>
-              <input id="title" required placeholder="例如：数据结构" />
-            </label>
-            <label>
-              <span>作者</span>
-              <input id="author" placeholder="作者" />
-            </label>
-            <label>
-              <span>分类</span>
-              <input id="category" placeholder="分类" />
-            </label>
-            <label>
-              <span>价格</span>
-              <input id="price" required type="number" min="0" step="0.01" placeholder="0.00" />
-            </label>
-            <label>
-              <span>库存</span>
-              <input id="stock" required type="number" min="0" step="1" placeholder="0" />
-            </label>
-            <div class="form-actions">
-              <button id="saveBookBtn" type="submit">添加图书</button>
-            </div>
-          </form>
 
           <div class="table-wrap">
             <table>
@@ -91,25 +60,7 @@
           </div>
         </section>
 
-        <section class="business-grid">
-          <div class="panel">
-            <h2>进货 / 销售</h2>
-            <div class="trade-form">
-              <label>
-                <span>图书</span>
-                <select id="tradeBook"></select>
-              </label>
-              <label>
-                <span>数量</span>
-                <input id="tradeQuantity" type="number" min="1" step="1" value="1" />
-              </label>
-              <div class="split-actions">
-                <button id="purchaseBtn" type="button">记录进货</button>
-                <button id="saleBtn" type="button">记录销售</button>
-              </div>
-            </div>
-          </div>
-
+        <section>
           <div class="panel">
             <h2>数据统计</h2>
             <div class="stat-lists">
@@ -135,13 +86,6 @@
           <span id="agentStatus">就绪</span>
         </div>
 
-        <div class="example-row">
-          <button type="button" data-example="查询库存少于 10 本的书">库存少于 10</button>
-          <button type="button" data-example="添加一本《算法导论》，价格 88，库存 15">添加图书</button>
-          <button type="button" data-example="卖出《数据结构》2 本">记录销售</button>
-          <button type="button" data-example="统计销量最高的 5 本书">销量排行</button>
-        </div>
-
         <div id="chatLog" class="chat-log"></div>
 
         <form id="agentForm" class="agent-form">
@@ -152,6 +96,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="{{ url_for('static', filename='app.js') }}?v=20260601-3"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=20260601-4"></script>
   </body>
 </html>

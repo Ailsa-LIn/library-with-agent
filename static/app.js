@@ -1,6 +1,5 @@
 const state = {
   books: [],
-  searchKeyword: "",
 };
 
 const els = {
@@ -9,21 +8,7 @@ const els = {
   soldQuantity: document.querySelector("#soldQuantity"),
   salesAmount: document.querySelector("#salesAmount"),
   booksTbody: document.querySelector("#booksTbody"),
-  bookForm: document.querySelector("#bookForm"),
-  title: document.querySelector("#title"),
-  author: document.querySelector("#author"),
-  category: document.querySelector("#category"),
-  price: document.querySelector("#price"),
-  stock: document.querySelector("#stock"),
-  saveBookBtn: document.querySelector("#saveBookBtn"),
-  searchInput: document.querySelector("#searchInput"),
-  searchBtn: document.querySelector("#searchBtn"),
-  lowStockBtn: document.querySelector("#lowStockBtn"),
   refreshBtn: document.querySelector("#refreshBtn"),
-  tradeBook: document.querySelector("#tradeBook"),
-  tradeQuantity: document.querySelector("#tradeQuantity"),
-  purchaseBtn: document.querySelector("#purchaseBtn"),
-  saleBtn: document.querySelector("#saleBtn"),
   topSalesList: document.querySelector("#topSalesList"),
   lowStockList: document.querySelector("#lowStockList"),
   chatLog: document.querySelector("#chatLog"),
@@ -71,19 +56,10 @@ async function loadAll() {
   await Promise.all([loadBooks(), loadStats()]);
 }
 
-async function loadBooks(options = {}) {
-  const params = new URLSearchParams();
-  if (options.lowStock) {
-    params.set("low_stock", options.lowStock);
-  } else if (state.searchKeyword) {
-    params.set("keyword", state.searchKeyword);
-  }
-
-  const query = params.toString() ? `?${params}` : "";
-  const payload = await requestJson(`/api/books${query}`);
+async function loadBooks() {
+  const payload = await requestJson("/api/books");
   state.books = payload.data || [];
   renderBooks();
-  renderTradeOptions();
 }
 
 async function loadStats() {
@@ -119,12 +95,6 @@ function renderBooks() {
     .join("");
 }
 
-function renderTradeOptions() {
-  els.tradeBook.innerHTML = state.books
-    .map((book) => `<option value="${book.id}">${escapeHtml(book.title)}（库存 ${book.stock}）</option>`)
-    .join("");
-}
-
 function renderTopSales(rows) {
   if (!rows.length) {
     els.topSalesList.innerHTML = `<li class="empty">暂无销售记录</li>`;
@@ -141,52 +111,6 @@ function renderLowStock(rows) {
     return;
   }
   els.lowStockList.innerHTML = rows.map((row) => `<li>${escapeHtml(row.title)}：${row.stock} 本</li>`).join("");
-}
-
-function resetBookForm() {
-  els.bookForm.reset();
-  els.saveBookBtn.textContent = "添加图书";
-}
-
-function bookPayload() {
-  return {
-    title: els.title.value.trim(),
-    author: els.author.value.trim(),
-    category: els.category.value.trim(),
-    price: Number(els.price.value),
-    stock: Number(els.stock.value),
-  };
-}
-
-async function saveBook(event) {
-  event.preventDefault();
-  const payload = bookPayload();
-  const result = await requestJson("/api/books", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-  showToast(result.message);
-  if (!result.success) return;
-  resetBookForm();
-  await loadAll();
-}
-
-async function recordTrade(type) {
-  const bookId = Number(els.tradeBook.value);
-  const quantity = Number(els.tradeQuantity.value);
-  if (!bookId || quantity <= 0) {
-    showToast("请选择图书并输入有效数量");
-    return;
-  }
-
-  const endpoint = type === "purchase" ? "/api/purchases" : "/api/sales";
-  const result = await requestJson(endpoint, {
-    method: "POST",
-    body: JSON.stringify({ book_id: bookId, quantity }),
-  });
-  showToast(result.message);
-  if (!result.success) return;
-  await loadAll();
 }
 
 function appendMessage(role, html, failed = false) {
@@ -245,27 +169,8 @@ async function sendAgentMessage(event) {
   }
 }
 
-els.bookForm.addEventListener("submit", saveBook);
-els.searchBtn.addEventListener("click", async () => {
-  state.searchKeyword = els.searchInput.value.trim();
-  await loadBooks();
-});
-els.lowStockBtn.addEventListener("click", async () => {
-  state.searchKeyword = "";
-  els.searchInput.value = "";
-  await loadBooks({ lowStock: 10 });
-});
 els.refreshBtn.addEventListener("click", loadAll);
-els.purchaseBtn.addEventListener("click", () => recordTrade("purchase"));
-els.saleBtn.addEventListener("click", () => recordTrade("sale"));
 els.agentForm.addEventListener("submit", sendAgentMessage);
 
-document.querySelectorAll("[data-example]").forEach((button) => {
-  button.addEventListener("click", () => {
-    els.agentInput.value = button.dataset.example;
-    els.agentInput.focus();
-  });
-});
-
-appendMessage("agent", "你好，我可以帮你查询、添加、改库存、记录销售和做库存预警。");
+appendMessage("agent", "你好，我可以帮你查询、添加、改库存、改价格、进货、销售、删除和做库存预警。");
 loadAll().catch((error) => showToast(error.message));
