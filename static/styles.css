@@ -345,23 +345,23 @@ tr:last-child td {
 }
 
 .agent-shortcuts {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   margin-top: 10px;
 }
 
 .agent-shortcuts button {
   min-height: 32px;
-  min-width: 78px;
+  min-width: 0;
   border: 1px solid var(--line);
   background: white;
   color: var(--text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 10px;
-  font-size: 14px;
+  padding: 0 3px;
+  font-size: 13px;
   white-space: nowrap;
   overflow: visible;
   text-align: center;
@@ -552,5 +552,6 @@ tr:last-child td {
 
   .agent-shortcuts {
     gap: 6px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
