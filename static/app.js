@@ -3,10 +3,6 @@ const state = {
 };
 
 const els = {
-  bookCount: document.querySelector("#bookCount"),
-  totalStock: document.querySelector("#totalStock"),
-  soldQuantity: document.querySelector("#soldQuantity"),
-  salesAmount: document.querySelector("#salesAmount"),
   booksTbody: document.querySelector("#booksTbody"),
   refreshBtn: document.querySelector("#refreshBtn"),
   topSalesList: document.querySelector("#topSalesList"),
@@ -64,11 +60,6 @@ async function loadBooks() {
 
 async function loadStats() {
   const payload = await requestJson("/api/stats");
-  const dashboard = payload.data.dashboard || {};
-  els.bookCount.textContent = dashboard.book_count || 0;
-  els.totalStock.textContent = dashboard.total_stock || 0;
-  els.soldQuantity.textContent = dashboard.sold_quantity || 0;
-  els.salesAmount.textContent = money(dashboard.sales_amount);
   renderTopSales(payload.data.top_sales || []);
   renderLowStock(payload.data.low_stock || []);
 }

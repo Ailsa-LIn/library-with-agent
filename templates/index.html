@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>基于 Agent 的图书进销存系统</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=20260601-4" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=20260601-5" />
   </head>
   <body>
     <header class="app-header">
@@ -19,25 +19,6 @@
 
     <main class="layout">
       <section class="workspace">
-        <div class="stats-grid" id="statsGrid">
-          <div class="metric">
-            <span>图书种类</span>
-            <strong id="bookCount">0</strong>
-          </div>
-          <div class="metric">
-            <span>总库存</span>
-            <strong id="totalStock">0</strong>
-          </div>
-          <div class="metric">
-            <span>总销量</span>
-            <strong id="soldQuantity">0</strong>
-          </div>
-          <div class="metric">
-            <span>销售额</span>
-            <strong id="salesAmount">0</strong>
-          </div>
-        </div>
-
         <section class="panel">
           <div class="panel-title">
             <h2>图书管理</h2>
@@ -96,6 +77,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="{{ url_for('static', filename='app.js') }}?v=20260601-4"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=20260601-5"></script>
   </body>
 </html>
