@@ -10,8 +10,8 @@ const els = {
   chatLog: document.querySelector("#chatLog"),
   agentForm: document.querySelector("#agentForm"),
   agentInput: document.querySelector("#agentInput"),
-  agentStatus: document.querySelector("#agentStatus"),
   shortcutButtons: document.querySelectorAll("[data-template]"),
+  shortcutPanel: document.querySelector(".agent-shortcuts"),
   shortcutToggle: document.querySelector("#shortcutToggle"),
   shortcutExtraButtons: document.querySelectorAll(".shortcut-extra"),
   toast: document.querySelector("#toast"),
@@ -146,7 +146,6 @@ async function sendAgentMessage(event) {
 
   appendMessage("user", escapeHtml(message));
   els.agentInput.value = "";
-  els.agentStatus.textContent = "处理中";
 
   try {
     const result = await requestJson("/api/agent", {
@@ -158,8 +157,6 @@ async function sendAgentMessage(event) {
     await loadAll();
   } catch (error) {
     appendMessage("agent", escapeHtml(error.message), true);
-  } finally {
-    els.agentStatus.textContent = "就绪";
   }
 }
 
@@ -190,12 +187,14 @@ els.shortcutButtons.forEach((button) => {
   });
 });
 els.shortcutToggle.addEventListener("click", () => {
-  const expanded = els.shortcutToggle.getAttribute("aria-expanded") === "true";
-  els.shortcutExtraButtons.forEach((button) => {
-    button.hidden = expanded;
+  animateShortcutLayout(() => {
+    const expanded = els.shortcutToggle.getAttribute("aria-expanded") === "true";
+    els.shortcutExtraButtons.forEach((button) => {
+      button.hidden = expanded;
+    });
+    els.shortcutToggle.setAttribute("aria-expanded", String(!expanded));
+    els.shortcutToggle.textContent = expanded ? "展开显示" : "折叠显示";
   });
-  els.shortcutToggle.setAttribute("aria-expanded", String(!expanded));
-  els.shortcutToggle.textContent = expanded ? "展开显示" : "折叠显示";
 });
 
 function placeCursorInTemplate(value) {
@@ -212,6 +211,48 @@ function placeCursorInTemplate(value) {
   }
 
   els.agentInput.setSelectionRange(value.length, value.length);
+}
+
+function animateShortcutLayout(updateLayout) {
+  const before = shortcutRects();
+  updateLayout();
+  const after = shortcutRects();
+
+  after.forEach((newRect, button) => {
+    const oldRect = before.get(button);
+    if (!oldRect) {
+      button.animate(
+        [
+          { opacity: 0, transform: "translateY(-4px)" },
+          { opacity: 1, transform: "translateY(0)" },
+        ],
+        { duration: 160, easing: "ease-out" },
+      );
+      return;
+    }
+
+    const dx = oldRect.left - newRect.left;
+    const dy = oldRect.top - newRect.top;
+    if (dx === 0 && dy === 0) return;
+
+    button.animate(
+      [
+        { transform: `translate(${dx}px, ${dy}px)` },
+        { transform: "translate(0, 0)" },
+      ],
+      { duration: 240, easing: "cubic-bezier(0.2, 0, 0, 1)" },
+    );
+  });
+}
+
+function shortcutRects() {
+  const rects = new Map();
+  els.shortcutPanel.querySelectorAll("button").forEach((button) => {
+    if (!button.hidden) {
+      rects.set(button, button.getBoundingClientRect());
+    }
+  });
+  return rects;
 }
 
 appendMessage("agent", "你好，我可以帮你查询、添加、改库存、改价格、进货、销售、删除和做库存预警。");

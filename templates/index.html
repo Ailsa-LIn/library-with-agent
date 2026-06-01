@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>基于 Agent 的图书进销存系统</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=20260601-8" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=20260601-12" />
   </head>
   <body>
     <header class="app-header">
@@ -78,7 +78,6 @@
               <button class="shortcut-extra" type="button" data-template="deleteBook" hidden>删除</button>
             </div>
           </div>
-          <span id="agentStatus">就绪</span>
         </div>
 
         <div id="chatLog" class="chat-log"></div>
@@ -91,6 +90,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="{{ url_for('static', filename='app.js') }}?v=20260601-8"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=20260601-12"></script>
   </body>
 </html>

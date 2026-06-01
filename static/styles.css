@@ -345,20 +345,30 @@ tr:last-child td {
 }
 
 .agent-shortcuts {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
 }
 
 .agent-shortcuts button {
   min-height: 32px;
+  min-width: 78px;
   border: 1px solid var(--line);
   background: white;
   color: var(--text);
-  padding: 0 12px;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  font-size: 14px;
   white-space: nowrap;
+  overflow: visible;
+  text-align: center;
+}
+
+.agent-shortcuts button[hidden] {
+  display: none;
 }
 
 .agent-shortcuts button:hover {
@@ -366,7 +376,13 @@ tr:last-child td {
   color: var(--primary);
 }
 
+.agent-shortcuts button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 111, 119, 0.18);
+}
+
 .agent-shortcuts .shortcut-toggle {
+  order: 100;
   background: var(--primary);
   color: white;
   border-color: var(--primary);
@@ -535,6 +551,6 @@ tr:last-child td {
   }
 
   .agent-shortcuts {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
   }
 }
