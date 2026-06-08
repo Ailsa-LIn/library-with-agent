@@ -13,6 +13,9 @@ except ImportError:  # DeepSeek is optional; local rules still work without requ
 import tools
 
 
+LAST_DEEPSEEK_ERROR = ""
+
+
 TOOL_DESCRIPTIONS = {
     "add_book": "添加图书，参数：title, price, stock, author, category",
     "search_book": "查询图书，参数：keyword",
@@ -20,7 +23,9 @@ TOOL_DESCRIPTIONS = {
     "delete_book": "删除图书，参数：title 或 book_id",
     "update_stock": "修改库存，参数：title 或 book_id, quantity, mode(increase/decrease/set)",
     "record_purchase": "记录进货，参数：title 或 book_id, quantity",
+    "multi_record_purchase": "批量记录进货，参数：actions，数组元素包含 title 和 quantity",
     "record_sale": "记录销售，参数：title 或 book_id, quantity",
+    "multi_record_sale": "批量记录销售，参数：actions，数组元素包含 title 和 quantity",
     "low_stock_alert": "库存预警，参数：threshold",
     "top_sales": "销量统计，参数：limit",
 }
@@ -31,7 +36,9 @@ def handle_agent_message(message: str) -> dict:
     if not command:
         return tools.fail("请输入要执行的指令")
 
-    parsed = _parse_with_deepseek(command) or _parse_locally(command)
+    multi_parsed = _parse_multi_command(command)
+    deepseek_parsed = None if multi_parsed else _parse_with_deepseek(command)
+    parsed = multi_parsed or deepseek_parsed or _parse_locally(command)
     result = _run_tool(parsed)
     result["agent"] = {
         "input": command,
@@ -39,12 +46,20 @@ def handle_agent_message(message: str) -> dict:
         "params": parsed.get("params", {}),
         "source": parsed.get("source", "local_rules"),
     }
+    if os.getenv("DEEPSEEK_API_KEY") and parsed.get("source") != "deepseek":
+        result["agent"]["deepseek_error"] = LAST_DEEPSEEK_ERROR or "DeepSeek 未返回可用 JSON，已退回本地规则"
     return result
 
 
 def _parse_with_deepseek(command: str) -> dict | None:
+    global LAST_DEEPSEEK_ERROR
+    LAST_DEEPSEEK_ERROR = ""
     api_key = os.getenv("DEEPSEEK_API_KEY")
-    if not api_key or requests is None:
+    if not api_key:
+        LAST_DEEPSEEK_ERROR = "未设置 DEEPSEEK_API_KEY"
+        return None
+    if requests is None:
+        LAST_DEEPSEEK_ERROR = "Python 环境未安装 requests，请运行 pip install -r requirements.txt"
         return None
 
     prompt = f"""
@@ -77,8 +92,11 @@ def _parse_with_deepseek(command: str) -> dict | None:
         parsed = _extract_json(content)
         if parsed:
             parsed["source"] = "deepseek"
+        else:
+            LAST_DEEPSEEK_ERROR = f"DeepSeek 返回内容不是 JSON：{content[:80]}"
         return parsed
-    except Exception:
+    except Exception as exc:
+        LAST_DEEPSEEK_ERROR = str(exc)
         return None
 
 
@@ -110,6 +128,13 @@ def _parse_locally(command: str) -> dict:
         return {
             "intent": "low_stock_alert",
             "params": {"threshold": numbers[0] if numbers else 10},
+            "source": "local_rules",
+        }
+
+    if re.search(r"还剩多少|剩多少|还有多少|库存多少|多少库存|有多少本|有几本", command):
+        return {
+            "intent": "search_book",
+            "params": {"keyword": title or _cleanup_keyword(command)},
             "source": "local_rules",
         }
 
@@ -198,6 +223,62 @@ def _parse_locally(command: str) -> dict:
     return {"intent": "unknown", "params": {}, "source": "local_rules"}
 
 
+def _parse_multi_command(command: str) -> dict | None:
+    actions = _extract_book_quantity_pairs(command)
+    if len(actions) < 2:
+        return None
+
+    if re.search(r"卖|售|销售|卖出|售出", command):
+        return {
+            "intent": "multi_record_sale",
+            "params": {"actions": actions},
+            "source": "local_multi_rules",
+        }
+
+    if re.search(r"进货|入库|补货|采购", command):
+        return {
+            "intent": "multi_record_purchase",
+            "params": {"actions": actions},
+            "source": "local_multi_rules",
+        }
+
+    return None
+
+
+def _extract_book_quantity_pairs(command: str) -> list[dict]:
+    actions: list[dict] = []
+    seen: set[tuple[str, int]] = set()
+
+    patterns = [
+        r"(\d+)\s*本?\s*《([^》]+)》",
+        r"《([^》]+)》\s*(\d+)\s*本",
+    ]
+    for pattern in patterns:
+        for match in re.finditer(pattern, command):
+            if match.group(1).isdigit():
+                quantity = int(match.group(1))
+                title = match.group(2).strip()
+            else:
+                title = match.group(1).strip()
+                quantity = int(match.group(2))
+
+            key = (title, quantity)
+            if key not in seen:
+                seen.add(key)
+                actions.append({"title": title, "quantity": quantity})
+
+    each_match = re.search(r"各\s*(\d+)\s*本", command)
+    if not actions and each_match:
+        quantity = int(each_match.group(1))
+        for title in re.findall(r"《([^》]+)》", command):
+            key = (title.strip(), quantity)
+            if key not in seen:
+                seen.add(key)
+                actions.append({"title": title.strip(), "quantity": quantity})
+
+    return actions
+
+
 def _run_tool(parsed: dict) -> dict:
     intent = parsed.get("intent")
     params: dict[str, Any] = parsed.get("params") or {}
@@ -244,12 +325,18 @@ def _run_tool(parsed: dict) -> dict:
             quantity=int(params.get("quantity") or 1),
         )
 
+    if intent == "multi_record_sale":
+        return tools.record_sales_batch(params.get("actions") or [])
+
     if intent == "record_purchase":
         return tools.record_purchase(
             book_id=params.get("book_id"),
             title=params.get("title"),
             quantity=int(params.get("quantity") or 0),
         )
+
+    if intent == "multi_record_purchase":
+        return tools.record_purchases_batch(params.get("actions") or [])
 
     if intent == "low_stock_alert":
         return tools.low_stock_alert(int(params.get("threshold") or 10))
@@ -300,5 +387,5 @@ def _extract_text_after(command: str, label: str) -> str | None:
 
 
 def _cleanup_keyword(command: str) -> str:
-    keyword = re.sub(r"查询|查找|搜索|看看|显示|图书|书籍|书", "", command)
+    keyword = re.sub(r"查询|查找|搜索|看看|显示|还剩多少|剩多少|还有多少|库存多少|多少库存|有多少本|有几本|图书|书籍|书", "", command)
     return keyword.strip(" ：:，,。")

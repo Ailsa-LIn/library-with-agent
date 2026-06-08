@@ -152,8 +152,9 @@ async function sendAgentMessage(event) {
       method: "POST",
       body: JSON.stringify({ message }),
     });
-    const intent = result.agent?.intent ? `<small>调用工具：${escapeHtml(result.agent.intent)}</small>` : "";
-    appendMessage("agent", `${escapeHtml(result.message)}${formatAgentData(result.data)}${intent}`, !result.success);
+    const intent = result.agent?.intent ? `<small>调用工具：${escapeHtml(result.agent.intent)}，来源：${escapeHtml(result.agent.source || "local_rules")}</small>` : "";
+    const deepseekError = result.agent?.deepseek_error ? `<small>DeepSeek：${escapeHtml(result.agent.deepseek_error)}</small>` : "";
+    appendMessage("agent", `${escapeHtml(result.message)}${formatAgentData(result.data)}${intent}${deepseekError}`, !result.success);
     await loadAll();
   } catch (error) {
     appendMessage("agent", escapeHtml(error.message), true);

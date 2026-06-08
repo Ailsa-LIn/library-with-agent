@@ -239,6 +239,41 @@ def record_purchase(
     return ok(f"已记录《{book['title']}》进货 {quantity} 本，当前库存 {new_stock} 本", row_to_dict(updated))
 
 
+def record_purchases_batch(items: list[dict]) -> dict:
+    if not items:
+        return fail("请提供要进货的图书和数量")
+
+    with get_conn() as conn:
+        resolved = []
+        for item in items:
+            quantity = int(item.get("quantity") or 0)
+            if quantity <= 0:
+                return fail("进货数量必须大于 0")
+
+            book = _resolve_book(conn, book_id=item.get("book_id"), title=item.get("title"))
+            if not book:
+                return fail(f"没有找到《{item.get('title', '')}》，进货前请先添加图书")
+            resolved.append((book, quantity))
+
+        messages = []
+        updated_rows = []
+        for book, quantity in resolved:
+            conn.execute(
+                "INSERT INTO purchases (book_id, quantity, note) VALUES (?, ?, ?)",
+                (book["id"], quantity, "Agent 批量进货"),
+            )
+            new_stock = book["stock"] + quantity
+            conn.execute(
+                "UPDATE books SET stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (new_stock, book["id"]),
+            )
+            updated = conn.execute("SELECT * FROM books WHERE id = ?", (book["id"],)).fetchone()
+            updated_rows.append(row_to_dict(updated))
+            messages.append(f"《{book['title']}》进货 {quantity} 本，当前库存 {new_stock} 本")
+
+    return ok("已批量记录进货：" + "；".join(messages), updated_rows)
+
+
 def record_sale(
     quantity: int,
     book_id: int | None = None,
@@ -283,6 +318,47 @@ def record_sale(
         f"已卖出《{book['title']}》{quantity} 本，销售额 {total_price:.2f} 元，剩余库存 {new_stock} 本",
         row_to_dict(updated),
     )
+
+
+def record_sales_batch(items: list[dict]) -> dict:
+    if not items:
+        return fail("请提供要销售的图书和数量")
+
+    with get_conn() as conn:
+        resolved = []
+        for item in items:
+            quantity = int(item.get("quantity") or 0)
+            if quantity <= 0:
+                return fail("销售数量必须大于 0")
+
+            book = _resolve_book(conn, book_id=item.get("book_id"), title=item.get("title"))
+            if not book:
+                return fail(f"没有找到《{item.get('title', '')}》")
+            if book["stock"] < quantity:
+                return fail(f"库存不足，当前《{book['title']}》只有 {book['stock']} 本")
+            resolved.append((book, quantity))
+
+        messages = []
+        updated_rows = []
+        for book, quantity in resolved:
+            total_price = round(float(book["price"]) * quantity, 2)
+            new_stock = book["stock"] - quantity
+            conn.execute(
+                """
+                INSERT INTO sales (book_id, quantity, unit_price, total_price)
+                VALUES (?, ?, ?, ?)
+                """,
+                (book["id"], quantity, book["price"], total_price),
+            )
+            conn.execute(
+                "UPDATE books SET stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (new_stock, book["id"]),
+            )
+            updated = conn.execute("SELECT * FROM books WHERE id = ?", (book["id"],)).fetchone()
+            updated_rows.append(row_to_dict(updated))
+            messages.append(f"《{book['title']}》{quantity} 本，销售额 {total_price:.2f} 元，剩余库存 {new_stock} 本")
+
+    return ok("已批量记录销售：" + "；".join(messages), updated_rows)
 
 
 def low_stock_alert(threshold: int = 10) -> dict:
